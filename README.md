@@ -58,7 +58,7 @@ Casi d'uso principali:
 
 ```bash
 git clone https://github.com/pietrorisipr-2025/CoreLang6
-cd corelang6
+cd CoreLang6
 python3 --version  # richiede Python 3.9+
 # dipendenza opzionale ma consigliata:
 pip install zstandard
