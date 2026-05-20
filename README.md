@@ -57,7 +57,7 @@ Casi d'uso principali:
 ## Quickstart
 
 ```bash
-git clone https://github.com/tuousername/corelang6](https://github.com/pietrorisipr-2025/CoreLang6
+git clone https://github.com/pietrorisipr-2025/CoreLang6
 cd corelang6
 python3 --version  # richiede Python 3.9+
 # dipendenza opzionale ma consigliata:
