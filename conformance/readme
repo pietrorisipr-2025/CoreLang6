@@ -1,0 +1,13 @@
+# Conformance
+
+Run the conformance suite:
+
+```bash
+python3 run_conformance.py
+
+About conf_run/
+
+conf_run/ contains pre-generated example artifacts (e.g., dataset_v1_full.bin, dataset_v2_full.bin, cl6_out/, and JSON reports).
+They are included as a reference snapshot of expected outputs.
+
+These artifacts are optional: you may delete conf_run/ and re-run the script to regenerate everything locally.
