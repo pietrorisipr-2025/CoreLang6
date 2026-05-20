@@ -237,6 +237,11 @@ Result: transfer is proportional to the **delta**, not the full release.
 
 ## Conformance
 
+```md
+> Note: `conformance/conf_run/` includes **pre-generated example artifacts** (datasets, chunks, and reports) so you can inspect expected outputs without running the suite.
+> These files are **optional** and can be deleted at any time—running `python3 conformance/run_conformance.py` will regenerate them locally.
+
+
 Run the conformance suite (it generates datasets/outputs locally):
 
 ```bash
