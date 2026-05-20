@@ -1,208 +1,295 @@
 # CoreLang6 (CL6)
 
-**Packaging, distribuzione e verifica di artefatti binari su larga scala.**
+**Packaging, distribution, and verifiable delivery of large binary artifacts** (datasets, ML models, corpora, indexes, logical backups) with:
 
-CL6 è uno stack per rilasci, aggiornamenti e repliche efficienti di dati pesanti: dataset, modelli ML, corpora, indici, backup logici. Risolve un problema specifico — trasferire solo i byte che sono davvero cambiati, con integrità verificabile e accesso parziale senza scaricare tutto.
+- **Content-Defined Chunking (CDC)** to maximize reuse across versions
+- **TOC v2** for **O(1)** partial extraction (chunk-level random access)
+- **Verifiable integrity** (SHA-256 per chunk/file + global Merkle root)
+- Optional **signing** (Ed25519; HMAC fallback)
 
----
-
-## Il problema che risolve
-
-Hai 10 GB di dati. Aggiorni il 3%. Con un archivio tradizionale rispedisci 10 GB. Con CL6 rispedisci ~300 MB, verifichi l'integrità chunk per chunk, e estrai solo la parte che ti serve senza toccare il resto.
-
-```
-Prima:  upload 10 GB → download 10 GB → verifica manuale (o nessuna)
-Con CL6: upload 300 MB di delta → download selettivo → verifica automatica SHA-256 + Merkle
-```
-
-Casi d'uso principali:
-
-- **Dataset/corpora aggiornati frequentemente** — spedisci solo i chunk nuovi tra versioni
-- **Modelli ML e patch** — LoRA, gradient update, shard di indici vettoriali con dedup e verifica
-- **Distribuzione su larga scala** — HTTP Range, resume su rete instabile, storage S3/GCS/MinIO
-- **Accesso parziale** — estrai un capitolo, uno shard, una porzione di file senza scaricare il container intero
+> Practical goal: **transfer only the bytes that changed**, verify them automatically, and extract just what you need without downloading everything.
 
 ---
 
-## Come funziona
+## The problem it solves
+
+You have **10 GB** of data and update **3%**. With a traditional archive you often re-ship **10 GB**.
+
+With CL6 you can typically ship **~300 MB** of delta (case-dependent), verify integrity **chunk-by-chunk**, and extract only a file (or a byte range of a file) without touching the rest.
+
+**Before:** upload 10 GB → download 10 GB → manual/no verification  
+**With CL6:** upload delta → selective download/extract → automatic SHA-256 + Merkle verification
+
+---
+
+## Typical use cases
+
+- **Frequently updated datasets/corpora:** ship only new chunks between releases
+- **ML models & patches:** LoRA, shards, index snapshots with dedup + verification
+- **Large-scale distribution:** resume-friendly packaging; storage backends can be layered (S3/GCS/MinIO)
+- **Partial access:** extract a single file (or range) without unpacking the whole container
+- **Audit/compliance:** per-chunk/per-file hashes + optional signature
+
+---
+
+## How it works (high level)
+
+A `.cl6b` container includes:
+
+- **Chunks** (compressed or stored)
+- **TOC v2** (chunk/file index for fast partial extraction and verification)
+- **Manifest** (metadata, profile, file/segment mapping)
+- **Integrity** (SHA-256 per chunk/file + Merkle root)
+- Optional **signature**
+
+Conceptual layout:
 
 ```
-+---------------------- Release (.cl6b) --------------------------------+
-| Manifest (file e segmenti)   |  TOC v2 (indice chunk/file)           |
-|   - elenco file              |  - per ogni chunk:                    |
-|   - segmenti → CID           |    {frame_start, comp_len, orig_len,  |
-|   - profilo build            |     codec, sha256}                    |
-|                              |  - per ogni file:                     |
-|                              |    {cids, offsets, total, sha256}     |
-|  +------------------------+  +-------------------------------------+  |
-|  |   Chunks compressi     |    Footer → offset TOC v2              |  |
-|  |  (zstd / zlib / store) |                                        |  |
-|  +------------------------+----------------------------------------+  |
-+-----------------------------------------------------------------------+
-              ^                        ^
-              |                        |
-            CDC                   Accesso O(1)
-      (content-defined             (range-read
-       chunking)                    per chunk)
++------------------------ Release (.cl6b) -------------------------------+
+| Manifest (files & segments) | TOC v2 (chunk/file index)               |
+|  - file list               |  - per-chunk: {frame_start, comp_len,    |
+|  - segments -> CID         |               orig_len, codec, sha256}   |
+|  - build profile           |  - per-file:  {cids, offsets, total,     |
+|                             |              sha256}                    |
+|  +----------------------+   +--------------------------------------+  |
+|  |  Compressed chunks   |   Footer -> TOC v2 offset                 |  |
+|  | (zstd/zlib/lz4/store)|                                          |  |
+|  +----------------------+------------------------------------------+  |
++------------------------------------------------------------------------+
+              ^                              ^
+              |                              |
+            CDC                        O(1) access
+      (rolling hash)                (chunk range-read)
 ```
 
-1. **Chunking CDC** — i file vengono spezzati con rolling hash (gear-hash). I confini sono stabili anche quando si inseriscono o spostano byte: massimizza il riuso tra versioni.
-2. **Compressione codec-agnostica** — ogni chunk è compresso con il codec del profilo (zstd consigliato, zlib o store come fallback). CL6 non è un codec: ne usa uno.
-3. **TOC v2** — indice precomputato che mappa ogni chunk a posizione, dimensioni, codec e SHA-256. Permette range-read O(1) e verifica senza parsare l'intero container.
-4. **Integrità** — SHA-256 per chunk e per file, Merkle root globale della release. Firma Ed25519 opzionale per ambienti regolati.
-5. **Delta-sync** — confronto tra release per CID: si trasferiscono solo i chunk che non esistono già sul destinatario.
+### Key components
+
+- **CDC (gear-hash rolling hash):** stable chunk boundaries even after inserts → high reuse
+- **Codec-agnostic:** CL6 is **not** a codec; it uses zstd/zlib/lz4/store via profiles
+- **TOC v2:** maps each chunk to position/codec/hash → fast random access and verification
+- **Integrity:** SHA-256 per chunk and per file + Merkle root for the release
+- **Signing:** optional Ed25519 (recommended) + HMAC fallback
 
 ---
 
 ## Quickstart
 
+### Requirements
+- **Python 3.9+**
+- Optional (recommended) dependencies:
+  - `zstandard` (best compression in most cases)
+  - `lz4` (only if you use LZ4 profiles)
+  - `blake3` (if you want BLAKE3 available; otherwise hashing may fall back)
+
+### Install
+
 ```bash
 git clone https://github.com/pietrorisipr-2025/CoreLang6
 cd CoreLang6
-python3 --version  # richiede Python 3.9+
-# dipendenza opzionale ma consigliata:
+
+python3 --version
+
+python3 -m venv .venv
+# Linux/macOS:
+source .venv/bin/activate
+# Windows PowerShell:
+# .\.venv\Scripts\Activate.ps1
+
+python -m pip install -U pip
+
+# Optional but recommended:
 pip install zstandard
+
+# Optional:
+# pip install lz4 blake3
 ```
 
-### Build e pubblicazione
+### Smoke test (30 seconds)
 
 ```bash
-# Pack con profilo zstd (consigliato in produzione)
+mkdir -p data
+echo "hello cl6" > data/hello.txt
+
+# Pack using a zstd profile
 python3 cl6.py pack-profile \
   --profile zstd-lean \
   --input-dir ./data \
   --out-file release.cl6b
 
-# Costruisci l'indice TOC v2
+# Build TOC v2
 python3 cl6.py build-toc-v2 \
   --container release.cl6b
 
-# Verifica la release
+# Extract one file (TOC v2 fast-path) + verify chunks
+python3 cl6.py extract-file \
+  --container release.cl6b \
+  --toc release.cl6b.toc.v2.json \
+  --path hello.txt \
+  --out-file out_hello.txt \
+  --verify
+```
+
+If `out_hello.txt` contains `hello cl6`, you're good.
+
+> If you do not install `zstandard`, use a compatible profile such as `zlib-compat` or `store`.
+
+---
+
+## Core workflow
+
+### Build & release checklist
+
+```bash
+python3 cl6.py pack-profile \
+  --profile zstd-lean \
+  --input-dir ./data \
+  --out-file release.cl6b
+
+python3 cl6.py build-toc-v2 \
+  --container release.cl6b
+
 python3 cl6.py release-checklist \
   --container release.cl6b \
   --toc release.cl6b.toc.v2.json
 ```
 
-### Estrazione parziale e verifica
+### Partial extraction & verification
 
 ```bash
-# Estrai un singolo file (fast-path con TOC v2, verifica chunk)
+# Extract a single file (TOC v2 fast-path)
 python3 cl6.py extract-file \
   --container release.cl6b \
   --toc release.cl6b.toc.v2.json \
-  --path path/nel/container \
+  --path path/inside/container \
   --out-file output.bin \
   --verify
 
-# Verifica integrità di un file specifico
+# Verify integrity of a specific file
 python3 cl6.py verify-file \
   --container release.cl6b \
   --toc release.cl6b.toc.v2.json \
-  --path path/nel/container
+  --path path/inside/container
+```
 
-# Estrazione con byte range (senza scaricare tutto)
+### Byte-range extraction
+
+```bash
 python3 cl6.py extract-file \
   --container release.cl6b \
-  --path path/nel/container \
+  --path path/inside/container \
   --out-file output.bin \
   --range 0:65536
 ```
 
-### Delta-sync (concetto operativo)
+---
 
-```
-Client → Server: "ho questi CID: [abc123, def456, ...]"
-Server → Client: chunk mancanti + manifest aggiornato
-Risultato: trasferimento proporzionale al delta, non alla release completa
-```
+## Build profiles
+
+| Profile       | Codec | Level | Avg chunk | When to use |
+|--------------|-------|-------|-----------|-------------|
+| `zstd-lean`   | zstd  | ~6    | ~512 KiB  | Production, slow networks, repetitive data |
+| `zlib-compat` | zlib  | ~6    | ~512 KiB  | Maximum compatibility, fewer deps |
+| `store`       | none  | 0     | ~1 MiB    | Debug or data already compressed |
+
+> Profiles are policies: they choose codec + parameters + chunk targets.
 
 ---
 
-## Profili di build
+## Delta-sync (operational concept)
 
-| Profilo       | Codec | Livello | Chunk medio | Quando usarlo                        |
-|---------------|-------|---------|-------------|--------------------------------------|
-| `zstd-lean`   | zstd  | 6       | 512 KiB     | Produzione, rete lenta, dati ripetuti|
-| `zlib-compat` | zlib  | 6       | 512 KiB     | Compatibilità massima, no dipendenze |
-| `store`       | nessuno | 0     | 1 MiB       | Debug, dati già compressi            |
+Delta-sync is CID-based:
+
+- Client → Server: “I already have these CIDs: […]”
+- Server → Client: missing chunks + updated manifest
+
+Result: transfer is proportional to the **delta**, not the full release.
+
+> Implementation status depends on the current repo version; see `KNOWN_ISSUES.md`.
 
 ---
 
-## Struttura del repository
+## Repository layout
 
+- `cl6.py` — main CLI
+- `cl6b/` — Python package
+  - `chunker.py` — CDC (gear-hash)
+  - `codecs.py` — codec plugins (zlib/zstd/lz4/store)
+  - `hashing.py` — hashing (may fall back if optional deps missing)
+  - `ioframes.py` — framed I/O (CRC32C)
+  - `manifest.py` — manifest validator (MANIFEST v3)
+  - `merkle.py` — Merkle tree (configurable fanout)
+  - `pack.py` — pack/extract container
+  - `partial.py` — partial extraction / byte-range logic
+  - `signing.py` — Ed25519 + HMAC fallback
+  - `toc.py` — TOC v1 / TOC v2 builder
+  - `util.py` — varint (LEB128)
+- `spec/` — format specs and guides
+  - `CL6_SPEC_v1_0.md`
+  - `README_TOC_v2.md`
+  - `README_SIGNING.md`
+  - `README_HTTP_RANGE.md`
+  - `README_PARTIAL_EXTRACTION.md`
+- `tools/` — extra utilities
+- `conformance/` — conformance tests (generates artifacts at runtime)
+- `Largest/` — optional area for large example artifacts
+
+---
+
+## Conformance
+
+Run the conformance suite (it generates datasets/outputs locally):
+
+```bash
+python3 conformance/run_conformance.py
 ```
-cl6.py                  # CLI principale
-cl6b/                   # Package Python
-  chunker.py            # CDC (gear-hash)
-  codecs.py             # Plugin codec (zlib/zstd/lz4/store)
-  hashing.py            # BLAKE3 con fallback SHA-256
-  ioframes.py           # Frame I/O con CRC32C
-  manifest.py           # Validator manifest CL6/MANIFEST_v3
-  merkle.py             # Merkle tree (fanout configurabile)
-  pack.py               # Pack/extract container .cl6b
-  partial.py            # Estrazione parziale e byte range
-  signing.py            # Ed25519 + HMAC fallback
-  toc.py                # Build TOC v1 e v2
-  util.py               # Varint LEB128
-spec/                   # Specifiche formato
-  CL6_SPEC_v1_0.md
-  README_TOC_v2.md
-  README_SIGNING.md
-  README_HTTP_RANGE.md
-  README_PARTIAL_EXTRACTION.md
-tools/                  # Utility aggiuntive
-conformance/            # Test di conformance
-```
+
+Tip: keep generated `.bin`, `chunks/`, `cl6_out/`, and reports out of version control unless you explicitly want to publish test artifacts.
 
 ---
 
-## Cosa CL6 non è
+## What CL6 is NOT
 
-- **Non è un protocollo di messaggistica** — va abbinato a HTTP/QUIC/gRPC per il trasporto
-- **Non è un codec** — usa zstd/zlib/store; il valore è nell'organizzazione (indice, dedup, verifica)
-- **Non sostituisce i tool di build ML** — li alimenta (packaging, transport, verifica post-build)
-- **Non è la scelta giusta** per un singolo file, trasferimento unico, nessun delta: in quel caso un `.zst` basta e avanza
+- Not a messaging protocol (pair it with HTTP/QUIC/gRPC for transport)
+- Not a codec (it uses zstd/zlib/lz4/store; value is in chunking + index + dedup + verification)
+- Not a replacement for ML build tooling (it packages and delivers build outputs)
+- Not the best choice for “one small file, one-time transfer” (a plain `.zst` may be enough)
 
 ---
 
-## Stato attuale e problemi noti
+## Project status
 
-Il progetto è alla **v0.16** — prototipo funzionante, non production-ready.
+**v0.16 — working prototype, not production-ready yet.**
 
-**Funziona:**
+Typically working features:
 - `pack-profile`, `build-toc-v2`, `release-checklist`
-- `extract-file` (con e senza TOC v2, con verifica chunk)
+- `extract-file` (with and without TOC v2, with chunk verification)
 - `verify-file`
-- Byte range extraction
-- Firma Ed25519 e HMAC fallback
-- CRC32C reale (Castagnoli, implementazione pure-Python)
+- byte-range extraction
+- Ed25519 signing and HMAC fallback
+- CRC32C (Castagnoli) implementation (pure Python)
 
-**Problemi noti:**
-- `pack.extract()` (funzione interna, non esposta dal CLI) ha un bug nel path di accesso casuale via indice — usa `frame_start` invece di `payload_start` come workaround, già implementato in `partial.py`
-- BLAKE3 non disponibile nell'ambiente base → fallback silenzioso su SHA-256; in produzione installare `blake3` o fissare SHA-256 come hash ufficiale
-- zstd e lz4 richiedono installazione esplicita (`pip install zstandard lz4`)
-- Delta-sync: il protocollo è definito concettualmente, l'implementazione client/server non è ancora nel repo
+Known issues / limitations: see **`KNOWN_ISSUES.md`**.
 
 ---
 
-## Roadmap
+## Roadmap (high level)
 
-- [ ] Fix `pack.extract()` random-access path
-- [ ] Hash stabile (scelta definitiva: SHA-256 esplicito o BLAKE3 obbligatorio)
-- [ ] Delta-sync: implementazione client/server minimale
-- [ ] Binding Go o Rust (la spec è language-agnostic)
-- [ ] Integrazione HTTP Range nativa
-- [ ] Observability (OpenTelemetry): bytes risparmiati, latenza p50/p95, tasso riuso chunk
-- [ ] Semantic chunking per testi e embedding
-
----
-
-## Contributi
-
-Il progetto è aperto. Se stai lavorando su distribuzione di artefatti ML, dataset pipeline, o sistemi di replica con delta-sync e hai un caso d'uso concreto, apri una issue — il feedback su problemi reali è la cosa più utile in questa fase.
+- Final fix for random-access path in internal `pack.extract()`
+- Decide stable hashing policy (explicit SHA-256 vs mandatory BLAKE3)
+- Minimal delta-sync client/server implementation
+- Go or Rust bindings (spec is language-agnostic)
+- Native HTTP Range integration
+- Observability (OpenTelemetry): bytes saved, p50/p95 latency, chunk reuse rate
+- Semantic chunking for text/embeddings
 
 ---
 
-## Licenza
+## Contributing
+
+If you're working on ML artifact distribution, dataset pipelines, or replication with delta-sync: open an issue with a real-world scenario. Practical feedback is the most valuable at this stage.
+
+---
+
+## License
 
 MIT
