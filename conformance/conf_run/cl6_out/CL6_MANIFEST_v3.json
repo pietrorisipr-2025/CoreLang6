@@ -1,0 +1,239 @@
+{
+  "schema": "CL6/MANIFEST_v3",
+  "version": "3.0",
+  "release_id": "generated",
+  "created_at": "now",
+  "merkle": {
+    "fanout": 1024,
+    "root": "74179939320693d3a048e501c643879680db796d66d1d4c78981d4f434643de4"
+  },
+  "chunks": [
+    {
+      "cid": "2874690a5f6f521f968daf4d6b91bdbbe2e6dad3f6a8f8fde7d423998f048e13",
+      "size": 960428,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003134019416344,
+        "clen": 960729
+      }
+    },
+    {
+      "cid": "f371114c45c6410db01eb0bfe2d2f85b6659aec5e2cc87641d85e20de181ea6e",
+      "size": 667591,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003160617803415,
+        "clen": 667802
+      }
+    },
+    {
+      "cid": "fce60a87c7c502d1eb44b37cd18853f92dfa11c3243995a5c2c5fe6a0b83924a",
+      "size": 412987,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003293081864562,
+        "clen": 413123
+      }
+    },
+    {
+      "cid": "84e88eac15df07f06fe025c2272502e671829203c00ab1ecf643004dd87f2d8e",
+      "size": 274438,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003315867336156,
+        "clen": 274529
+      }
+    },
+    {
+      "cid": "68efcc084f4f77ad844984c463cb9579240868f09b0eefc0b858e82c41e95e4e",
+      "size": 455060,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.000320836812728,
+        "clen": 455206
+      }
+    },
+    {
+      "cid": "c8fa851931fa2823ba872d9a18308244cf362104c7e09d7aaa57489f234c200f",
+      "size": 1048576,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003108978271484,
+        "clen": 1048902
+      }
+    },
+    {
+      "cid": "f26dee2618ec1cf0e4ebd0382442a9ac46aec68c475de60d7231388fd2fedd9a",
+      "size": 1048576,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003108978271484,
+        "clen": 1048902
+      }
+    },
+    {
+      "cid": "78fc2551ad9f9c454091dfda3c24ef70a63a53e3825c51efb0da83eab07246ea",
+      "size": 266027,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003420705417119,
+        "clen": 266118
+      }
+    },
+    {
+      "cid": "372fd8605dd8ac290cb6a9175f499d7fa2e261916c7b357c41fbe5f99088ecb9",
+      "size": 809844,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003161102632112,
+        "clen": 810100
+      }
+    },
+    {
+      "cid": "f3cb8c7f1cd4a496e226aa6c173001e4961454b2f1bd98d4ef2d1c9d99b48903",
+      "size": 1048576,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003108978271484,
+        "clen": 1048902
+      }
+    },
+    {
+      "cid": "7c38ccaa6672565633afa0087b34fcfc8165f6f0a220c62255c3bdd6aabb822e",
+      "size": 1048576,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003108978271484,
+        "clen": 1048902
+      }
+    },
+    {
+      "cid": "1e65922df3b03a2b5d66421f1beadc2b6038eb92fce4b483cd95b478d40cf3e7",
+      "size": 538641,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.000317465621815,
+        "clen": 538812
+      }
+    },
+    {
+      "cid": "bd789560a58da6daf9bfa136dc2211673cb290b3f9207d14a1665663a1a19cee",
+      "size": 1048576,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.0003108978271484,
+        "clen": 1048902
+      }
+    },
+    {
+      "cid": "9ab2cf4540da8a6d6d9a89e62b5395a9d4a92606609c42e75ca603a582ee0bac",
+      "size": 857864,
+      "z": {
+        "algo": "zlib",
+        "level": 6,
+        "ratio": 1.000315900888719,
+        "clen": 858135
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "dataset_v2_full.bin",
+      "size": 10485760,
+      "segments": [
+        {
+          "cid": "2874690a5f6f521f968daf4d6b91bdbbe2e6dad3f6a8f8fde7d423998f048e13",
+          "file_offset": 0,
+          "length": 960428
+        },
+        {
+          "cid": "f371114c45c6410db01eb0bfe2d2f85b6659aec5e2cc87641d85e20de181ea6e",
+          "file_offset": 960428,
+          "length": 667591
+        },
+        {
+          "cid": "fce60a87c7c502d1eb44b37cd18853f92dfa11c3243995a5c2c5fe6a0b83924a",
+          "file_offset": 1628019,
+          "length": 412987
+        },
+        {
+          "cid": "84e88eac15df07f06fe025c2272502e671829203c00ab1ecf643004dd87f2d8e",
+          "file_offset": 2041006,
+          "length": 274438
+        },
+        {
+          "cid": "68efcc084f4f77ad844984c463cb9579240868f09b0eefc0b858e82c41e95e4e",
+          "file_offset": 2315444,
+          "length": 455060
+        },
+        {
+          "cid": "c8fa851931fa2823ba872d9a18308244cf362104c7e09d7aaa57489f234c200f",
+          "file_offset": 2770504,
+          "length": 1048576
+        },
+        {
+          "cid": "f26dee2618ec1cf0e4ebd0382442a9ac46aec68c475de60d7231388fd2fedd9a",
+          "file_offset": 3819080,
+          "length": 1048576
+        },
+        {
+          "cid": "78fc2551ad9f9c454091dfda3c24ef70a63a53e3825c51efb0da83eab07246ea",
+          "file_offset": 4867656,
+          "length": 266027
+        },
+        {
+          "cid": "372fd8605dd8ac290cb6a9175f499d7fa2e261916c7b357c41fbe5f99088ecb9",
+          "file_offset": 5133683,
+          "length": 809844
+        },
+        {
+          "cid": "f3cb8c7f1cd4a496e226aa6c173001e4961454b2f1bd98d4ef2d1c9d99b48903",
+          "file_offset": 5943527,
+          "length": 1048576
+        },
+        {
+          "cid": "7c38ccaa6672565633afa0087b34fcfc8165f6f0a220c62255c3bdd6aabb822e",
+          "file_offset": 6992103,
+          "length": 1048576
+        },
+        {
+          "cid": "1e65922df3b03a2b5d66421f1beadc2b6038eb92fce4b483cd95b478d40cf3e7",
+          "file_offset": 8040679,
+          "length": 538641
+        },
+        {
+          "cid": "bd789560a58da6daf9bfa136dc2211673cb290b3f9207d14a1665663a1a19cee",
+          "file_offset": 8579320,
+          "length": 1048576
+        },
+        {
+          "cid": "9ab2cf4540da8a6d6d9a89e62b5395a9d4a92606609c42e75ca603a582ee0bac",
+          "file_offset": 9627896,
+          "length": 857864
+        }
+      ]
+    }
+  ],
+  "security": {
+    "signatures": [
+      {
+        "alg": "HS256",
+        "kid": "conf",
+        "value": "ffff0bdc058978b45235819e328d1ef8f9d9e324593bc0ac373f3406427f822e"
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "v1": {
+    "name": "dataset_v1_full.bin",
+    "bytes": 10485760
+  },
+  "v2": {
+    "name": "dataset_v2_full.bin",
+    "bytes": 10485760
+  },
+  "chunking": {
+    "min_kib": 256,
+    "avg_kib": 512,
+    "max_kib": 1024,
+    "codec": "zlib",
+    "level": 6
+  },
+  "stats": {
+    "total_chunks": 14,
+    "new_bytes": 10485760,
+    "reuse_bytes": 0,
+    "reuse_pct": 0.0
+  }
+}
