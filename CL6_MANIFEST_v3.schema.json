@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/cl6/manifest_v3.schema.json",
+  "title": "CL6/MANIFEST_v3",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "release_id",
+    "merkle",
+    "chunks",
+    "files"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "CL6/MANIFEST_v3"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^3\\.0(\\.[0-9]+)?$"
+    },
+    "release_id": {
+      "type": "string",
+      "minLength": 4
+    },
+    "base_release_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "merkle": {
+      "type": "object",
+      "required": [
+        "fanout",
+        "root"
+      ],
+      "properties": {
+        "fanout": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 65536
+        },
+        "root": {
+          "type": "string",
+          "minLength": 16
+        }
+      }
+    },
+    "chunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "cid",
+          "size"
+        ],
+        "properties": {
+          "cid": {
+            "type": "string",
+            "minLength": 16
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "z": {
+            "type": "object",
+            "properties": {
+              "algo": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "zstd",
+                  "lz4"
+                ]
+              },
+              "level": {
+                "type": "integer"
+              },
+              "ratio": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "size",
+          "segments"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "cid",
+                "file_offset",
+                "length"
+              ],
+              "properties": {
+                "cid": {
+                  "type": "string",
+                  "minLength": 16
+                },
+                "file_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "length": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "security": {
+      "type": "object"
+    },
+    "profiles": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": false
+}
